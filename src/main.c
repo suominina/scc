@@ -40,10 +40,9 @@ const char *KEYWORDS[] = {
 struct token_t {
   enum token_type_t type;
   char *token;
+  int token_len;
   union {
-    int int_val;
     long long_val;
-    short short_val;
     char *str_val;
   };
 };
@@ -77,19 +76,27 @@ void realloc_list(struct token_list_t *token_list)
 
 void set_token(struct token_list_t *token_list, struct token_t *token, const char *sf_buf, int token_len, enum token_type_t token_type)
 {
-    token->token = strndup(sf_buf, token_len+1);
-    token->token[token_len+1] = '\0';
-    token->type = token_type;
+  token->token = strndup(sf_buf, token_len+1);
+  token->token[token_len+1] = '\0';
+  token->token_len = token_len;
+  token->type = token_type;
 
-    if (token_type == IDENTIFIER) {
-      token->str_val = strndup(sf_buf, token_len+1);
-      token->str_val[token_len+1] = '\0';
-    } else if (token_type == INT) {
-      token->int_val = atoi(token->token);
-    }
+  switch (token_type) {
+  case IDENTIFIER:
+    token->str_val = strndup(sf_buf, token_len+1);
+    token->str_val[token_len+1] = '\0';
+    break;
+  case SHORT:
+  case INT:
+  case LONG:
+    token->long_val = atol(token->token);
+    break;
+  default:
+    break;
+  }
 
-    token_list->tokens[token_list->count] = *token;
-    token_list->count++;
+  token_list->tokens[token_list->count] = *token;
+  token_list->count++;
 }
 
 struct token_list_t *tokenize(const char *sf_buf)
@@ -100,6 +107,7 @@ struct token_list_t *tokenize(const char *sf_buf)
   token_list->capacity = 0;
   struct token_t *token = 
     check_ptr(malloc(sizeof(struct token_t)));
+  token->token_len = 0;
 
   /* tokenization process */
   for (int i = 0; sf_buf[i] != '\0'; i++) {
@@ -207,6 +215,10 @@ int main(int argc, char **argv)
     fprintf(stderr, "error: no token was found\n");
   }
 
+  /* won't use sf_buf anymore */
+  if (sf_buf != NULL) {
+    free(sf_buf);
+  }
 
   /* for testing */
   printf(" --- tokens ---\n");
