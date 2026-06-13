@@ -22,7 +22,8 @@ enum token_type_t {
   OPEN_BRACE,
   CLOSE_BRACE,
   SEMICOLON,
-  TOKEN_END
+  NEWLINE,
+  UNKNOWN
 };
 
 #define KEYWORDS_LIST_LEN 4
@@ -58,19 +59,15 @@ void *check_ptr(void *ptr)
   }
 }
 
-/* if token count is equal to or bigger than capacity, 
- * reallocate memory */
-void check_list_size(struct token_list_t *token_list)
+void realloc_list(struct token_list_t *token_list)
 {
-  if (token_list->count >= token_list->capacity) {
-    if (token_list->capacity == 0) {
-      token_list->capacity = INITIAL_CAPACITY;
-    } else {
-      token_list->capacity *= 2;
-    }
-    token_list->tokens = 
-      realloc(token_list->tokens, token_list->capacity * sizeof(struct token_t));
+  if (token_list->capacity == 0) {
+    token_list->capacity = INITIAL_CAPACITY;
+  } else {
+    token_list->capacity *= 2;
   }
+  token_list->tokens = 
+    realloc(token_list->tokens, token_list->capacity * sizeof(struct token_t));
 }
 
 void set_token(struct token_list_t *token_list, struct token_t *token, const char *sf_buf, int token_len, enum token_type_t token_type)
@@ -87,20 +84,22 @@ struct token_list_t *tokenize(const char *sf_buf)
 {
   struct token_list_t *token_list = 
     check_ptr(malloc(sizeof(struct token_list_t)));
+  token_list->count = 0;
+  token_list->capacity = 0;
   struct token_t *token = 
     check_ptr(malloc(sizeof(struct token_t)));
 
   /* tokenization process */
   for (int i = 0; sf_buf[i] != '\0'; i++) {
-    /* make sure there's enough room for token in token_list */
-    /* realloc if count is equal to or bigger than capacity */
-    check_list_size(token_list);
+    if (token_list->count >= token_list->capacity) {
+      realloc_list(token_list);
+    }
 
     int token_len = 0;
     if (isblank(sf_buf[i])) {
       continue;
     } else if (isalpha(sf_buf[i])) {
-      /* should be identifier or keyword at this point */
+      /* should be an identifier or a keyword */
       while (isalnum(sf_buf[i+token_len])) {
         token_len++;
       }
@@ -121,10 +120,11 @@ struct token_list_t *tokenize(const char *sf_buf)
           token_type = IDENTIFIER;
         }
       }
-      set_token(token_list, token, &sf_buf[i], token_len, token_type);
+      set_token(token_list, token, &sf_buf[i], token_len-1, token_type);
 
       i += token_len-1;
     } else if (isdigit(sf_buf[i])) {
+      /* should be a constant */
       while (isdigit(sf_buf[i+token_len])) {
         token_len++;
       }
@@ -140,6 +140,10 @@ struct token_list_t *tokenize(const char *sf_buf)
       set_token(token_list, token, &sf_buf[i], token_len, CLOSE_BRACE);
     } else if (sf_buf[i] == ';') {
       set_token(token_list, token, &sf_buf[i], token_len, SEMICOLON);
+    } else if (sf_buf[i] == '\n') {
+      set_token(token_list, token, &sf_buf[i], token_len, NEWLINE);
+    } else {
+      set_token(token_list, token, &sf_buf[i], token_len, UNKNOWN);
     }
   }
 
@@ -190,10 +194,15 @@ int main(int argc, char **argv)
   }
 
 
+  /* for testing */
   printf(" --- tokens ---\n");
   for (int i = 0; i < token_list->count; i++) {
     /* use switch statement to show token type */
-    printf("'%s': %d\n", token_list->tokens[i].token, token_list->tokens[i].type);
+    if (token_list->tokens[i].type == NEWLINE) {
+      continue;
+    } else {
+      printf("'%s': %d\n", token_list->tokens[i].token, token_list->tokens[i].type);
+    }
   }
 
   //free_token_list();
@@ -201,3 +210,9 @@ int main(int argc, char **argv)
 
   return EXIT_SUCCESS;
 }
+
+
+/* TODO: implement free_token_list()
+ *
+ *
+ * */
