@@ -1,3 +1,6 @@
+#define _POSIX_C_SOURCE 200809L
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,23 +9,43 @@
 #define INITIAL_CAPACITY 256
 #define SF_BUFSIZE 4096
 
+/* token_type and KEYWORDS must be in the same order */
 enum token_type_t {
-  RETURN,
   INT,
+  CHAR,
   VOID,
+  RETURN,
+  IDENTIFIER,
+  CONSTANT,
+  OPEN_PARENTHESIS,
+  CLOSE_PARENTHESIS,
+  OPEN_BRACE,
+  CLOSE_BRACE,
   SEMICOLON,
   TOKEN_END
 };
 
+#define KEYWORDS_LIST_LEN 4
+const char *KEYWORDS[] = {
+  "int",
+  "char",
+  "void",
+  "return"
+};
+
 struct token_t {
   enum token_type_t type;
-  char *value;
+  char *token;
+  union {
+    int int_val;
+    char *str_val;
+  };
 };
 
 struct token_list_t {
   struct token_t *tokens;
-  int count;
-  int capacity;
+  int count; /* how many tokens tokens have */
+  int capacity; 
 };
 
 void *check_ptr(void *ptr)
@@ -35,15 +58,92 @@ void *check_ptr(void *ptr)
   }
 }
 
-struct token_t tokenize(const char *sf_buf)
+/* if token count is equal to or bigger than capacity, 
+ * reallocate memory */
+void check_list_size(struct token_list_t *token_list)
 {
-  struct token_t token = {0};
-  token.value = check_ptr(malloc(sizeof(struct token_t) * strlen(sf_buf) + 1));
-  /*
-  memcpy(token.value, sf_buf, strlen(sf_buf) + 1);
-  */
-  token.type = TOKEN_END;
-  return token;
+  if (token_list->count >= token_list->capacity) {
+    if (token_list->capacity == 0) {
+      token_list->capacity = INITIAL_CAPACITY;
+    } else {
+      token_list->capacity *= 2;
+    }
+    token_list->tokens = 
+      realloc(token_list->tokens, token_list->capacity * sizeof(struct token_t));
+  }
+}
+
+void set_token(struct token_list_t *token_list, struct token_t *token, const char *sf_buf, int token_len, enum token_type_t token_type)
+{
+    token->token = strndup(sf_buf, token_len+1);
+    token->token[token_len+1] = '\0';
+    token->type = token_type;
+
+    token_list->tokens[token_list->count] = *token;
+    token_list->count++;
+}
+
+struct token_list_t *tokenize(const char *sf_buf)
+{
+  struct token_list_t *token_list = 
+    check_ptr(malloc(sizeof(struct token_list_t)));
+  struct token_t *token = 
+    check_ptr(malloc(sizeof(struct token_t)));
+
+  /* tokenization process */
+  for (int i = 0; sf_buf[i] != '\0'; i++) {
+    /* make sure there's enough room for token in token_list */
+    /* realloc if count is equal to or bigger than capacity */
+    check_list_size(token_list);
+
+    int token_len = 0;
+    if (isblank(sf_buf[i])) {
+      continue;
+    } else if (isalpha(sf_buf[i])) {
+      /* should be identifier or keyword at this point */
+      while (isalnum(sf_buf[i+token_len])) {
+        token_len++;
+      }
+
+      /* check if token is one of the keywords */
+      enum token_type_t token_type = 0;
+      for (int j = 0; j < KEYWORDS_LIST_LEN; j++) {
+        if (strlen(KEYWORDS[j]) >= token_len) {
+          if (memcmp(&sf_buf[i], KEYWORDS[j], token_len) == 0) {
+            token_type = j;
+          } 
+        } else if (strlen(KEYWORDS[j]) < token_len) {
+          if (memcmp(&sf_buf[i], KEYWORDS[j], strlen(KEYWORDS[j])) == 0) {
+            token_type = j; 
+          }
+        } else {
+          /* token == identifier */
+          token_type = IDENTIFIER;
+        }
+      }
+      set_token(token_list, token, &sf_buf[i], token_len, token_type);
+
+      i += token_len-1;
+    } else if (isdigit(sf_buf[i])) {
+      while (isdigit(sf_buf[i+token_len])) {
+        token_len++;
+      }
+      set_token(token_list, token, &sf_buf[i], token_len, CONSTANT);
+      i += token_len-1;
+    } else if (sf_buf[i] == '(') {
+      set_token(token_list, token, &sf_buf[i], token_len, OPEN_PARENTHESIS);
+    } else if (sf_buf[i] == ')') {
+      set_token(token_list, token, &sf_buf[i], token_len, CLOSE_PARENTHESIS);
+    } else if (sf_buf[i] == '{') {
+      set_token(token_list, token, &sf_buf[i], token_len, OPEN_BRACE);
+    } else if (sf_buf[i] == '}') {
+      set_token(token_list, token, &sf_buf[i], token_len, CLOSE_BRACE);
+    } else if (sf_buf[i] == ';') {
+      set_token(token_list, token, &sf_buf[i], token_len, SEMICOLON);
+    }
+  }
+
+  return token_list;
 }
 
 
@@ -84,27 +184,19 @@ int main(int argc, char **argv)
     }
   }
 
-  struct token_list_t token_list = {0}; /* dynamic array */
-  while(1) {
-    if (token_list.count >= token_list.capacity) {
-      if (token_list.capacity == 0) {
-        token_list.capacity = INITIAL_CAPACITY;
-      } else {
-        token_list.capacity *= 2;
-      }
-      token_list.tokens = 
-        realloc(token_list.tokens, token_list.capacity * sizeof(struct token_t));
-    }
-    token_list.tokens[token_list.count++] = tokenize(sf_buf);
-    if (token_list.tokens[token_list.count-1].type == TOKEN_END) {
-      break;
-    }
+  struct token_list_t *token_list = tokenize(sf_buf);
+  if (token_list->count == 0) {
+    fprintf(stderr, "error: no token was found\n");
   }
 
-  for (int i = 0; i < token_list.count; i++) {
-    printf("%s", token_list.tokens[i].value);
+
+  printf(" --- tokens ---\n");
+  for (int i = 0; i < token_list->count; i++) {
+    /* use switch statement to show token type */
+    printf("'%s': %d\n", token_list->tokens[i].token, token_list->tokens[i].type);
   }
 
+  //free_token_list();
   fclose(sf_ptr);
 
   return EXIT_SUCCESS;
