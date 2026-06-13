@@ -7,7 +7,6 @@
 #include <regex.h>
 
 #define INITIAL_CAPACITY 256
-#define SF_BUFSIZE 4096
 
 /* token_type and KEYWORDS must be in the same order */
 enum token_type_t {
