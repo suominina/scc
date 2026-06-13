@@ -11,7 +11,9 @@
 
 /* token_type and KEYWORDS must be in the same order */
 enum token_type_t {
+  SHORT,
   INT,
+  LONG,
   CHAR,
   VOID,
   RETURN,
@@ -28,7 +30,9 @@ enum token_type_t {
 
 #define KEYWORDS_LIST_LEN 4
 const char *KEYWORDS[] = {
+  "short",
   "int",
+  "long",
   "char",
   "void",
   "return"
@@ -39,6 +43,8 @@ struct token_t {
   char *token;
   union {
     int int_val;
+    long long_val;
+    short short_val;
     char *str_val;
   };
 };
@@ -76,6 +82,13 @@ void set_token(struct token_list_t *token_list, struct token_t *token, const cha
     token->token[token_len+1] = '\0';
     token->type = token_type;
 
+    if (token_type == IDENTIFIER) {
+      token->str_val = strndup(sf_buf, token_len+1);
+      token->str_val[token_len+1] = '\0';
+    } else if (token_type == INT) {
+      token->int_val = atoi(token->token);
+    }
+
     token_list->tokens[token_list->count] = *token;
     token_list->count++;
 }
@@ -100,7 +113,7 @@ struct token_list_t *tokenize(const char *sf_buf)
       continue;
     } else if (isalpha(sf_buf[i])) {
       /* should be an identifier or a keyword */
-      while (isalnum(sf_buf[i+token_len])) {
+      while (isalnum(sf_buf[i+token_len]) || sf_buf[i+token_len] == '_') {
         token_len++;
       }
 
@@ -130,6 +143,8 @@ struct token_list_t *tokenize(const char *sf_buf)
       }
       set_token(token_list, token, &sf_buf[i], token_len, CONSTANT);
       i += token_len-1;
+
+    /* TODO: should use switch statament insted */
     } else if (sf_buf[i] == '(') {
       set_token(token_list, token, &sf_buf[i], token_len, OPEN_PARENTHESIS);
     } else if (sf_buf[i] == ')') {
