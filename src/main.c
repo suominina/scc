@@ -8,33 +8,32 @@
 
 #define INITIAL_CAPACITY 256
 
-/* token_type and KEYWORDS must be in the same order */
+/* token_type and Keywords must be in the same order */
 enum token_type_t {
-  SHORT,
-  INT,
-  LONG,
-  CHAR,
-  VOID,
-  RETURN,
-  IDENTIFIER,
-  CONSTANT,
-  OPEN_PARENTHESIS,
-  CLOSE_PARENTHESIS,
-  OPEN_BRACE,
-  CLOSE_BRACE,
-  SEMICOLON,
-  NEWLINE,
-  UNKNOWN
+  AUTO, BREAK, CASE, CHAR, CONST,
+  CONTINUE, DEFAULT, DO, DOUBLE, ELSE,
+  ENUM, EXTERN, FLOAT, FOR, GOTO,
+  IF, INLINE, INT, LONG, REGISTER,
+  RESTRICT, RETURN, SHORT, SIGNED, SIZEOF, 
+  STATIC, STRUCT, SWITCH, TYPEDEF, UNION, 
+  UNSIGNED, VOID, VOLATILE, WHILE, _ALIGNAS, 
+  _ALIGNOF, _ATOMIC, _BOOL, COMPLEX, GENERIC, 
+  _IMAGINARY, _NORETURN, _STATIC_ASSERT, THREAD_LOCAL,
+  IDENTIFIER, CONSTANT, OPEN_PARENTHESIS, CLOSE_PARENTHESIS, OPEN_BRACE,
+  CLOSE_BRACE, SEMICOLON, NEWLINE, UNKNOWN
 };
 
-#define KEYWORDS_LIST_LEN 4
-const char *KEYWORDS[] = {
-  "short",
-  "int",
-  "long",
-  "char",
-  "void",
-  "return"
+#define Keywords_LIST_LEN 44
+const char *Keywords[] = {
+  "auto", "break", "case", "char", "const",
+  "continue", "default", "do", "double", "else",
+  "enum", "extern", "float", "for", "goto",
+  "if", "inline", "int", "long","register",
+  "restrict","return","short","signed","sizeof",
+  "static","struct","switch","typedef","union",
+  "unsigned","void","volatile","while","_Alignas",
+  "_Alignof","_Atomic","_Bool","Complex","Generic",
+  "_Imaginary","_Noreturn","_Static_assert","Thread_local"
 };
 
 struct token_t {
@@ -76,15 +75,15 @@ void realloc_list(struct token_list_t *token_list)
 
 void set_token(struct token_list_t *token_list, struct token_t *token, const char *sf_buf, int token_len, enum token_type_t token_type)
 {
-  token->token = strndup(sf_buf, token_len+1);
-  token->token[token_len+1] = '\0';
+  token->token = strndup(sf_buf, token_len);
+  token->token[token_len] = '\0';
   token->token_len = token_len;
   token->type = token_type;
 
   switch (token_type) {
   case IDENTIFIER:
-    token->str_val = strndup(sf_buf, token_len+1);
-    token->str_val[token_len+1] = '\0';
+    token->str_val = strndup(sf_buf, token_len);
+    token->str_val[token_len] = '\0';
     break;
   case SHORT:
   case INT:
@@ -125,22 +124,19 @@ struct token_list_t *tokenize(const char *sf_buf)
       }
 
       /* check if token is one of the keywords */
-      enum token_type_t token_type = 0;
-      for (int j = 0; j < KEYWORDS_LIST_LEN; j++) {
-        if (strlen(KEYWORDS[j]) >= token_len) {
-          if (memcmp(&sf_buf[i], KEYWORDS[j], token_len) == 0) {
+      enum token_type_t token_type = IDENTIFIER;
+      for (int j = 0; j < Keywords_LIST_LEN; j++) {
+        if (strlen(Keywords[j]) >= token_len) {
+          if (memcmp(&sf_buf[i], Keywords[j], token_len) == 0) {
             token_type = j;
           } 
-        } else if (strlen(KEYWORDS[j]) < token_len) {
-          if (memcmp(&sf_buf[i], KEYWORDS[j], strlen(KEYWORDS[j])) == 0) {
+        } else if (strlen(Keywords[j]) < token_len) {
+          if (memcmp(&sf_buf[i], Keywords[j], strlen(Keywords[j])) == 0) {
             token_type = j; 
           }
-        } else {
-          /* token == identifier */
-          token_type = IDENTIFIER;
-        }
+        } 
       }
-      set_token(token_list, token, &sf_buf[i], token_len-1, token_type);
+      set_token(token_list, token, &sf_buf[i], token_len, token_type);
 
       i += token_len-1;
     } else if (isdigit(sf_buf[i])) {
@@ -153,19 +149,19 @@ struct token_list_t *tokenize(const char *sf_buf)
 
     /* TODO: should use switch statament insted */
     } else if (sf_buf[i] == '(') {
-      set_token(token_list, token, &sf_buf[i], token_len, OPEN_PARENTHESIS);
+      set_token(token_list, token, &sf_buf[i], token_len+1, OPEN_PARENTHESIS);
     } else if (sf_buf[i] == ')') {
-      set_token(token_list, token, &sf_buf[i], token_len, CLOSE_PARENTHESIS);
+      set_token(token_list, token, &sf_buf[i], token_len+1, CLOSE_PARENTHESIS);
     } else if (sf_buf[i] == '{') {
-      set_token(token_list, token, &sf_buf[i], token_len, OPEN_BRACE);
+      set_token(token_list, token, &sf_buf[i], token_len+1, OPEN_BRACE);
     } else if (sf_buf[i] == '}') {
-      set_token(token_list, token, &sf_buf[i], token_len, CLOSE_BRACE);
+      set_token(token_list, token, &sf_buf[i], token_len+1, CLOSE_BRACE);
     } else if (sf_buf[i] == ';') {
-      set_token(token_list, token, &sf_buf[i], token_len, SEMICOLON);
+      set_token(token_list, token, &sf_buf[i], token_len+1, SEMICOLON);
     } else if (sf_buf[i] == '\n') {
-      set_token(token_list, token, &sf_buf[i], token_len, NEWLINE);
+      set_token(token_list, token, &sf_buf[i], token_len+1, NEWLINE);
     } else {
-      set_token(token_list, token, &sf_buf[i], token_len, UNKNOWN);
+      set_token(token_list, token, &sf_buf[i], token_len+1, UNKNOWN);
     }
   }
 
