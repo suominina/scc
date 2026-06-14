@@ -1,5 +1,16 @@
 CC = gcc
-CFLAGS = -g -Wall -Wextra -std=c99
+CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude
 
-scc: src/main.c
-	$(CC) $(CFLAGS) -o $@ $^
+TARGET = scc
+
+SRCS = src/scc.c src/lex.c
+OBJS = $(SRCS:%.c=%.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS)
+	rm -f $(OBJS)
+
+clean:
+	rm -f $(OBJS)
