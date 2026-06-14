@@ -22,25 +22,18 @@ enum token_type_t {
   TOK_OPEN_BRACKET, TOK_CLOSE_BRACKET, 
   TOK_SEMICOLON, TOK_NEWLINE, 
 
+  /* operator */
+  TOK_PLUS, TOK_MINUS, TOK_ASTR, TOK_SLASH, TOK_EQ,
+  /* operator */
+
   /* --- tokens that have value --- */
-  TOK_CCHAR, TOK_CINT, TOK_UINT, TOK_CLONG, TOK_CULONG, TOK_STR ,
+  TOK_NUMBER,
+  TOK_CCHAR, TOK_CINT, TOK_CUINT, TOK_CLONG, TOK_CULONG, TOK_STR ,
   /* --- tokens that have value --- */
 
   TOK_UNKNOWN
 };
 
-#define KEYWORDS_LIST_LEN 44
-static const char *Keywords[] = {
-  "auto", "break", "case", "char", "const",
-  "continue", "default", "do", "double", "else",
-  "enum", "extern", "float", "for", "goto",
-  "if", "inline", "int", "long","register",
-  "restrict","return","short","signed","sizeof",
-  "static","struct","switch","typedef","union",
-  "unsigned","void","volatile","while","_Alignas",
-  "_Alignof","_Atomic","_Bool","Complex","Generic",
-  "_Imaginary","_Noreturn","_Static_assert","Thread_local"
-};
 
 struct token_t {
   enum token_type_t type;
@@ -61,5 +54,6 @@ struct token_list_t {
 
 extern struct token_list_t *tokenize(const char *);
 
+extern const char *Keywords[];
 
 #endif
