@@ -3,7 +3,7 @@ CFLAGS = -g -Wall -Wextra -std=c99 -Iinclude
 
 TARGET = scc
 
-SRCS = src/scc.c src/lex.c
+SRCS = src/scc.c src/lex.c src/parse.c
 OBJS = $(SRCS:%.c=%.o)
 
 all: $(TARGET)
