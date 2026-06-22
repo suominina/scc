@@ -21,10 +21,18 @@ enum token_type_t {
   TOK_OPEN_BRACE, TOK_CLOSE_BRACE, 
   TOK_OPEN_BRACKET, TOK_CLOSE_BRACKET, 
   TOK_SEMICOLON, TOK_NEWLINE, 
+  TOK_DOT, TOK_THREEDOTS, TOK_ARROW, TOK_INCREMENT, TOK_DECREMENT, TOK_AMPERSAND,
 
-  /* operator */
-  TOK_PLUS, TOK_MINUS, TOK_ASTR, TOK_SLASH, TOK_EQ,
-  /* operator */
+  /* assignment operator */
+  TOK_ADD, TOK_MIN, TOK_MUL, TOK_DIV, 
+  TOK_MOD, TOK_A_AND, TOK_A_OR, TOK_XOR, 
+  TOK_SHL, TOK_SAR, TOK_SHR,
+  /* assignment operator */
+
+  /* conditional operator */
+  TOK_LT TOK_LTE, TOK_GT, TOK_GTE, TOK_EQ, TOK_NEQ TOK_AND, TOK_OR,
+
+  /* conditional operator */
 
   /* --- tokens that have value --- */
   TOK_NUMBER,

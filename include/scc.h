@@ -4,6 +4,5 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <regex.h>
 
 #include "lex.h"
